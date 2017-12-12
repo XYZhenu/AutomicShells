@@ -22,3 +22,5 @@ systemctl restart vsftpd
 firewall-cmd --zone=public --add-port=80/tcp --permanent
 firewall-cmd --zone=public --add-port=21/tcp --permanent
 systemctl restart firewalld.service
+
+chown -R wpvpn:wp wp-vpn/wp-content
