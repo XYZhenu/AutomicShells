@@ -1,0 +1,5 @@
+show databases;
+show tables from ssmgr;
+CREATE DATABASE webgui;
+GRANT ALL ON webgui.* TO 'vpn' IDENTIFIED BY "mariadb.vpn.vultr.ssmgr.";
+FLUSH PRIVILEGES;
