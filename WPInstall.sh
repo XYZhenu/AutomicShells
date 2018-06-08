@@ -2,7 +2,7 @@
 echo "start download components"
 rpm -Uvh https://mirror.webtatic.com/yum/el7/epel-release.rpm
 rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
-yum -y install net-tools  mariadb mariadb-server httpd vsftpd unzip zip php70w.x86_64 php70w-mysql.x86_64 php70w-xml.x86_64 php70w-gd.x86_64 php70w-fpm.x86_64
+yum -y install net-tools mariadb mariadb-server httpd vsftpd unzip zip php70w.x86_64 php70w-mysql.x86_64 php70w-xml.x86_64 php70w-gd.x86_64 php70w-fpm.x86_64
 
 wget https://cn.wordpress.org/wordpress-4.9.1-zh_CN.zip
 unzip wordpress-4.9.1-zh_CN.zip -d /var/www/html/

@@ -1,0 +1,77 @@
+#!/bin/bash
+ssrpanelpwd="mGr,In#=j%Dv"
+dbip=140.143.226.24
+groupadd www
+useradd -g www www -s /sbin/nologin
+
+rpm -Uvh https://mirror.webtatic.com/yum/el7/epel-release.rpm
+rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
+
+yum clean all
+#yum -y update
+yum -y install git unzip zip nginx curl gd net-tools npm
+yum -y install bzip2 m2crypto libsodium libmcrypt libxml2 openssl
+yum -y install php72w php72w-cli php72w-common php72w-fpm php72w-gd php72w-mbstring php72w-mysql php72w-xml
+
+
+systemctl start nginx
+cd /etc/nginx/
+mv nginx.conf nginx.conf.origin
+wget https://github.com/WeakSelf/AutoInstall/raw/master/nginx.conf
+
+cd /etc/nginx/conf.d/
+wget https://github.com/WeakSelf/AutoInstall/raw/master/ssrpanel.conf
+nginx -s reload
+systemctl start php-fpm
+systemctl enable php-fpm
+systemctl enable nginx
+
+echo "install ssrpanel"
+mkdir /var/www
+cd /var/www
+git clone https://github.com/ssrpanel/ssrpanel.git
+
+sed -i "s/'username' => 'root',/'username' => 'ssrpanel',/" /var/www/ssrpanel/config/database.php
+sed -i "s/'password' => 'root',/'password' => $ssrpanelpwd,/" /var/www/ssrpanel/config/database.php
+sed -i "s/'debug' => true,/'debug' => false,/" /var/www/ssrpanel/config/app.php
+cd /var/www/ssrpanel
+php composer.phar install
+echo -e "yes" | php artisan key:generate
+chown -R www:www .
+chmod -R 777 storage/
+
+echo "Asia/Shanghai" > /etc/sysconfig/clock
+echo -e "\n" | cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+yum install ntp
+echo "ntpdate cn.pool.ntp.org" >> /etc/rc.d/rc.local
+chmod +x /etc/rc.d/rc.local
+echo '* * * * * php /var/www/ssrpanel/artisan schedule:run >> /dev/null 2>&1' | crontab -e 
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+systemctl restart firewalld
+echo "SSRPanel Complete!"
+
+cd /var/www
+wget -c https://github.com/ssrpanel/ssrpanel/raw/master/server/ssr-3.4.0.tar.gz 
+tar -zxvf ssr-3.4.0.tar.gz 
+cd shadowsocksr   
+./setup_cymysql.sh
+sed -i -e "s/server_host/$dbip/g" usermysql.json
+sed -i -e "s/server_port/3306/g" usermysql.json
+sed -i -e "s/server_db/ssrpanel/g" usermysql.json
+sed -i -e "s/server_user/ssrpanel/g" usermysql.json
+sed -i -e "s/server_password/$ssrpanelpwd/g" usermysql.json
+sed -i -e "s/nodeid/1/g" usermysql.json
+sed -i -e "s/noderatio/1/g" usermysql.json
+sed -i -e "s/\"fast_open\": false/\"fast_open\": true/g" user-config.json
+sed -i -e "s/\"server_ipv6\": \"::\",//g" user-config.json
+chmod +x *.sh
+echo "/var/www/shadowsocksr/run.sh" >> /etc/rc.d/rc.local
+firewall-cmd --zone=public --add-port=10000-40000/tcp --permanent
+firewall-cmd --zone=public --add-port=10000-40000/udp --permanent
+
+cd /var/www
+wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
+chmod +x bbr.sh
+echo -e "\n" "yes\n" |  ./bbr.sh
+
+reboot
